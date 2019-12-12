@@ -1,0 +1,845 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "autosize": "pad",
+  "padding": 25,
+  "data": [
+    {
+      "name": "modelData"
+    },
+    {
+      "name": "featuresInfo"
+    },
+    {
+      "name": "modelsInfo"
+    },
+    {
+      "name": "intervalData"
+    },
+    {
+      "name": "data_0",
+      "source": "modelData",
+      "transform": [
+        {
+          "type": "lookup",
+          "from": "featuresInfo",
+          "key": "feature",
+          "fields": ["feature"],
+          "values": ["feature_label"]
+        },
+        {
+          "type": "lookup",
+          "from": "modelsInfo",
+          "key": "model",
+          "fields": ["model"],
+          "values": ["model_label"]
+        },
+        {
+          "type": "formula",
+          "expr": "abs(datum.shap_value)",
+          "as": "abs_shap_value"
+        }
+      ]
+    },
+    {
+      "name": "data_1",
+      "source": "data_0",
+      "transform": [
+        {
+          "type": "lookup",
+          "from": "intervalData",
+          "key": "label",
+          "fields": ["label"],
+          "values": ["x1", "x2", "y1", "y2"]
+        },
+        {
+          "type": "joinaggregate",
+          "as": ["mean_abs_shap_value_by_feature_label"],
+          "ops": ["mean"],
+          "fields": ["abs_shap_value"],
+          "groupby": ["feature_label"]
+        }
+      ]
+    },
+    {
+      "name": "concat_0_column_domain",
+      "source": "data_1",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["feature_label"],
+          "fields": ["abs_shap_value"],
+          "ops": ["mean"],
+          "as": ["mean_abs_shap_value"]
+        }
+      ]
+    },
+    {
+      "name": "concat_0_row_domain",
+      "source": "data_1",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["model_label"]
+        }
+      ]
+    },
+    {
+      "name": "data_3",
+      "source": "data_1",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["label", "x2", "y2", "model_label", "feature_label"],
+          "ops": ["mean", "mean"],
+          "fields": ["x1", "y1"],
+          "as": ["mean_x1", "mean_y1"]
+        }
+      ]
+    },
+    {
+      "name": "data_4",
+      "source": "data_0",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["feature", "model_label"],
+          "ops": ["mean", "mean", "missing", "count"],
+          "fields": ["abs_shap_value", "agree", "agree", null],
+          "as": ["mean_abs_shap_value", "mean_agree", "missing", "total"]
+        },
+        {
+          "type": "stack",
+          "groupby": ["model_label"],
+          "field": "mean_abs_shap_value",
+          "sort": {
+            "field": ["mean_abs_shap_value"],
+            "order": ["descending"]
+          },
+          "as": ["x1", "x2"],
+          "offset": "normalize"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.missing / datum.total",
+          "as": "missing_percentage"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.missing_percentage == 1 ? 0 : datum.mean_agree",
+          "as": "mean_agree"
+        },
+        {
+          "type": "formula",
+          "expr": "[datum.mean_agree * (1 - datum.missing_percentage), (1 - datum.mean_agree) * (1 - datum.missing_percentage), datum.missing_percentage]",
+          "as": "agree_percentage"
+        },
+        {
+          "type": "formula",
+          "expr": "[1, 0, 0.5]",
+          "as": "agree"
+        },
+        {
+          "type": "flatten",
+          "fields": ["agree_percentage", "agree"],
+          "as": ["agree_percentage", "agree"]
+        },
+        {
+          "type": "stack",
+          "groupby": ["feature", "model_label"],
+          "field": "agree_percentage",
+          "sort": {
+            "field": ["agree"],
+            "order": ["descending"]
+          },
+          "as": ["y1", "y2"],
+          "offset": "zero"
+        },
+        {
+          "type": "formula",
+          "expr": "(datum.x1 + datum.x2)/2",
+          "as": "text_x"
+        }
+      ]
+    },
+    {
+      "name": "concat_1_row_domain",
+      "source": "data_4",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["model_label"]
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "name": "concat_0_child_width",
+      "value": 200
+    },
+    {
+      "name": "concat_0_child_height",
+      "value": 200
+    },
+    {
+      "name": "concat_1_child_width",
+      "value": 200
+    },
+    {
+      "name": "concat_1_child_height",
+      "value": 200
+    }
+  ],
+  "layout": {
+    "padding": 20,
+    "bounds": "full",
+    "align": "each"
+  },
+  "marks": [
+    {
+      "type": "group",
+      "name": "concat_0_group",
+      "layout": {
+        "padding": 18,
+        "offset": {
+          "columnTitle": 10
+        },
+        "columns": {
+          "signal": "length(data('concat_0_column_domain'))"
+        },
+        "bounds": "full",
+        "align": "all"
+      },
+      "marks": [
+        {
+          "name": "column-title",
+          "type": "group",
+          "role": "column-title",
+          "title": {
+            "text": "Features",
+            "style": "guide-title",
+            "fontSize": 15,
+            "fontWeight": "normal",
+            "offset": 10
+          }
+        },
+        {
+          "name": "concat_0_row_header",
+          "type": "group",
+          "role": "row-header",
+          "from": {
+            "data": "concat_0_row_domain"
+          },
+          "sort": {
+            "field": "datum[\"model_label\"]",
+            "order": "ascending"
+          },
+          "title": {
+            "text": {
+              "signal": "''+parent[\"model_label\"]"
+            },
+            "orient": "left",
+            "style": "guide-label",
+            "frame": "group",
+            "baseline": "middle",
+            "align": "right",
+            "angle": 0,
+            "fontSize": 15,
+            "offset": 35
+          },
+          "encode": {
+            "update": {
+              "height": {
+                "signal": "concat_0_child_height"
+              }
+            }
+          },
+          "axes": [
+            {
+              "scale": "concat_0_y",
+              "orient": "left",
+              "grid": false,
+              "title": "Grape Quality",
+              "labelOverlap": true,
+              "tickCount": {
+                "signal": "ceil(concat_0_child_height/40)"
+              },
+              "zindex": 1
+            }
+          ]
+        },
+        {
+          "name": "concat_0_column_header",
+          "type": "group",
+          "role": "column-header",
+          "from": {
+            "data": "concat_0_column_domain"
+          },
+          "sort": {
+            "field": "datum[\"mean_abs_shap_value\"]",
+            "order": "descending"
+          },
+          "title": {
+            "text": {
+              "signal": "''+parent[\"feature_label\"]"
+            },
+            "style": "guide-label",
+            "frame": "group",
+            "fontSize": 12,
+            "offset": 12
+          },
+          "encode": {
+            "update": {
+              "width": {
+                "signal": "concat_0_child_width"
+              }
+            }
+          }
+        },
+        {
+          "name": "concat_0_cell",
+          "type": "group",
+          "style": "cell",
+          "from": {
+            "facet": {
+              "name": "concat_0_facet",
+              "data": "data_1",
+              "groupby": ["model_label", "feature_label"],
+              "aggregate": {
+                "cross": false,
+                "fields": ["mean_abs_shap_value_by_feature_label"],
+                "ops": ["max"],
+                "as": ["mean_abs_shap_value_by_feature_label"]
+              }
+            }
+          },
+          "sort": {
+            "field": [
+              "datum[\"model_label\"]",
+              "datum[\"mean_abs_shap_value_by_feature_label\"]"
+            ],
+            "order": ["ascending", "descending"]
+          },
+          "data": [
+            {
+              "source": "concat_0_facet",
+              "name": "data_0",
+              "transform": [
+                {
+                  "type": "aggregate",
+                  "groupby": ["label", "x2", "y2"],
+                  "ops": ["mean", "mean"],
+                  "fields": ["x1", "y1"],
+                  "as": ["mean_x1", "mean_y1"]
+                }
+              ]
+            }
+          ],
+          "encode": {
+            "update": {
+              "width": {
+                "signal": "concat_0_child_width"
+              },
+              "height": {
+                "signal": "concat_0_child_height"
+              }
+            }
+          },
+          "marks": [
+            {
+              "name": "concat_0_child_layer_0_marks",
+              "type": "rect",
+              "clip": true,
+              "style": ["rect"],
+              "from": {
+                "data": "data_0"
+              },
+              "encode": {
+                "update": {
+                  "opacity": {
+                    "value": 0.25
+                  },
+                  "fill": [
+                    {
+                      "test": "datum[\"mean_x1\"] === null || isNaN(datum[\"mean_x1\"]) || datum[\"mean_y1\"] === null || isNaN(datum[\"mean_y1\"])",
+                      "value": null
+                    },
+                    {
+                      "value": "#2ca02c"
+                    }
+                  ],
+                  "x": [
+                    {
+                      "test": "datum[\"mean_x1\"] === null || isNaN(datum[\"mean_x1\"])",
+                      "value": 0
+                    },
+                    {
+                      "scale": "concat_0_child_x",
+                      "field": "mean_x1"
+                    }
+                  ],
+                  "x2": [
+                    {
+                      "test": "datum[\"x2\"] === null || isNaN(datum[\"x2\"])",
+                      "value": 0
+                    },
+                    {
+                      "scale": "concat_0_child_x",
+                      "field": "x2"
+                    }
+                  ],
+                  "y": [
+                    {
+                      "test": "datum[\"mean_y1\"] === null || isNaN(datum[\"mean_y1\"])",
+                      "field": {
+                        "group": "height"
+                      }
+                    },
+                    {
+                      "scale": "concat_0_y",
+                      "field": "mean_y1"
+                    }
+                  ],
+                  "y2": [
+                    {
+                      "test": "datum[\"y2\"] === null || isNaN(datum[\"y2\"])",
+                      "field": {
+                        "group": "height"
+                      }
+                    },
+                    {
+                      "scale": "concat_0_y",
+                      "field": "y2"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "concat_0_child_layer_1_marks",
+              "type": "symbol",
+              "style": ["circle"],
+              "from": {
+                "data": "concat_0_facet"
+              },
+              "encode": {
+                "update": {
+                  "opacity": {
+                    "value": 0.7
+                  },
+                  "fill": [
+                    {
+                      "test": "datum[\"value\"] === null || isNaN(datum[\"value\"]) || datum[\"expected_value\"] === null || isNaN(datum[\"expected_value\"])",
+                      "value": null
+                    },
+                    {
+                      "test": "datum.agree === null",
+                      "value": "#8a8a8a"
+                    },
+                    {
+                      "scale": "color",
+                      "field": "agree"
+                    }
+                  ],
+                  "x": [
+                    {
+                      "test": "datum[\"value\"] === null || isNaN(datum[\"value\"])",
+                      "value": 0
+                    },
+                    {
+                      "scale": "concat_0_child_x",
+                      "field": "value"
+                    }
+                  ],
+                  "y": [
+                    {
+                      "test": "datum[\"expected_value\"] === null || isNaN(datum[\"expected_value\"])",
+                      "field": {
+                        "group": "height"
+                      }
+                    },
+                    {
+                      "scale": "concat_0_y",
+                      "field": "expected_value"
+                    }
+                  ],
+                  "shape": {
+                    "value": "circle"
+                  }
+                }
+              }
+            }
+          ],
+          "scales": [
+            {
+              "name": "concat_0_child_x",
+              "type": "linear",
+              "domain": {
+                "fields": [
+                  [],
+                  {
+                    "data": "concat_0_facet",
+                    "field": "value"
+                  }
+                ]
+              },
+              "range": [
+                0,
+                {
+                  "signal": "concat_0_child_width"
+                }
+              ],
+              "nice": true,
+              "zero": false,
+              "padding": 0.5
+            }
+          ],
+          "axes": [
+            {
+              "scale": "concat_0_child_x",
+              "orient": "bottom",
+              "grid": false,
+              "title": " ",
+              "labelFlush": true,
+              "labelOverlap": true,
+              "tickCount": {
+                "signal": "ceil(concat_0_child_width/40)"
+              },
+              "zindex": 1
+            },
+            {
+              "scale": "concat_0_child_x",
+              "orient": "bottom",
+              "gridScale": "concat_0_y",
+              "grid": true,
+              "tickCount": {
+                "signal": "ceil(concat_0_child_width/40)"
+              },
+              "domain": false,
+              "labels": false,
+              "maxExtent": 0,
+              "minExtent": 0,
+              "ticks": false,
+              "zindex": 0
+            },
+            {
+              "scale": "concat_0_y",
+              "orient": "left",
+              "gridScale": "concat_0_child_x",
+              "grid": true,
+              "tickCount": {
+                "signal": "ceil(concat_0_child_height/40)"
+              },
+              "domain": false,
+              "labels": false,
+              "maxExtent": 0,
+              "minExtent": 0,
+              "ticks": false,
+              "zindex": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "name": "concat_1_group",
+      "layout": {
+        "padding": 18,
+        "columns": 1,
+        "bounds": "full",
+        "align": "all"
+      },
+      "marks": [
+        {
+          "name": "concat_1_row_header",
+          "type": "group",
+          "role": "row-header",
+          "from": {
+            "data": "concat_1_row_domain"
+          },
+          "sort": {
+            "field": "datum[\"model_label\"]",
+            "order": "ascending"
+          },
+          "title": {
+            "text": {
+              "signal": "''+parent[\"model_label\"]"
+            },
+            "orient": "left",
+            "style": "guide-label",
+            "frame": "group",
+            "fontSize": 0.000001,
+            "offset": 10
+          },
+          "encode": {
+            "update": {
+              "height": {
+                "signal": "concat_1_child_height"
+              }
+            }
+          },
+          "axes": [
+            {
+              "scale": "concat_1_y",
+              "orient": "left",
+              "grid": false,
+              "title": "Agreement",
+              "format": "%",
+              "labelOverlap": true,
+              "tickCount": {
+                "signal": "ceil(concat_1_child_height/40)"
+              },
+              "zindex": 1
+            }
+          ]
+        },
+        {
+          "name": "concat_1_cell",
+          "type": "group",
+          "style": "cell",
+          "from": {
+            "facet": {
+              "name": "concat_1_facet",
+              "data": "data_4",
+              "groupby": ["model_label"]
+            }
+          },
+          "sort": {
+            "field": ["datum[\"model_label\"]"],
+            "order": ["ascending"]
+          },
+          "encode": {
+            "update": {
+              "width": {
+                "signal": "concat_1_child_width"
+              },
+              "height": {
+                "signal": "concat_1_child_height"
+              }
+            }
+          },
+          "marks": [
+            {
+              "name": "concat_1_child_layer_0_marks",
+              "type": "rect",
+              "style": ["rect"],
+              "from": {
+                "data": "concat_1_facet"
+              },
+              "encode": {
+                "update": {
+                  "stroke": [
+                    {
+                      "test": "datum[\"x1\"] === null || isNaN(datum[\"x1\"]) || datum[\"y1\"] === null || isNaN(datum[\"y1\"])",
+                      "value": null
+                    },
+                    {
+                      "value": "white"
+                    }
+                  ],
+                  "strokeWidth": {
+                    "value": 0.5
+                  },
+                  "fill": [
+                    {
+                      "test": "datum[\"x1\"] === null || isNaN(datum[\"x1\"]) || datum[\"y1\"] === null || isNaN(datum[\"y1\"])",
+                      "value": null
+                    },
+                    {
+                      "scale": "concat_1_child_color",
+                      "field": "agree"
+                    }
+                  ],
+                  "x": {
+                    "scale": "concat_1_child_x",
+                    "field": "x1"
+                  },
+                  "x2": {
+                    "scale": "concat_1_child_x",
+                    "field": "x2"
+                  },
+                  "y": {
+                    "scale": "concat_1_y",
+                    "field": "y1"
+                  },
+                  "y2": {
+                    "scale": "concat_1_y",
+                    "field": "y2"
+                  }
+                }
+              }
+            },
+            {
+              "name": "concat_1_child_layer_1_marks",
+              "type": "text",
+              "style": ["text"],
+              "from": {
+                "data": "concat_1_facet"
+              },
+              "encode": {
+                "update": {
+                  "baseline": {
+                    "value": "bottom"
+                  },
+                  "dy": {
+                    "value": -3
+                  },
+                  "fill": [
+                    {
+                      "test": "datum[\"text_x\"] === null || isNaN(datum[\"text_x\"])",
+                      "value": null
+                    },
+                    {
+                      "value": "white"
+                    }
+                  ],
+                  "x": {
+                    "scale": "concat_1_child_x",
+                    "field": "text_x"
+                  },
+                  "y": {
+                    "field": {
+                      "group": "height"
+                    }
+                  },
+                  "text": {
+                    "signal": "''+datum[\"feature\"]"
+                  },
+                  "align": {
+                    "value": "center"
+                  }
+                }
+              }
+            }
+          ],
+          "scales": [
+            {
+              "name": "concat_1_child_x",
+              "type": "linear",
+              "domain": {
+                "fields": [
+                  [0, 1],
+                  {
+                    "data": "concat_1_facet",
+                    "field": "text_x"
+                  }
+                ]
+              },
+              "range": [
+                0,
+                {
+                  "signal": "concat_1_child_width"
+                }
+              ],
+              "nice": true,
+              "zero": true
+            },
+            {
+              "name": "concat_1_child_color",
+              "type": "ordinal",
+              "domain": [1, 0, 0.5],
+              "range": ["#1f77b4", "#ff7f0e", "#8a8a8a"],
+              "interpolate": "hcl"
+            }
+          ],
+          "axes": [
+            {
+              "scale": "concat_1_child_x",
+              "orient": "bottom",
+              "grid": false,
+              "title": "Importance",
+              "format": "%",
+              "labelFlush": true,
+              "labelOverlap": true,
+              "tickCount": {
+                "signal": "ceil(concat_1_child_width/40)"
+              },
+              "zindex": 1
+            },
+            {
+              "scale": "concat_1_child_x",
+              "orient": "bottom",
+              "gridScale": "concat_1_y",
+              "grid": true,
+              "tickCount": {
+                "signal": "ceil(concat_1_child_width/40)"
+              },
+              "domain": false,
+              "labels": false,
+              "maxExtent": 0,
+              "minExtent": 0,
+              "ticks": false,
+              "zindex": 0
+            },
+            {
+              "scale": "concat_1_y",
+              "orient": "left",
+              "gridScale": "concat_1_child_x",
+              "grid": true,
+              "tickCount": {
+                "signal": "ceil(concat_1_child_height/40)"
+              },
+              "domain": false,
+              "labels": false,
+              "maxExtent": 0,
+              "minExtent": 0,
+              "ticks": false,
+              "zindex": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": [1, 0],
+      "range": ["#1f77b4", "#ff7f0e"],
+      "interpolate": "hcl"
+    },
+    {
+      "name": "concat_0_y",
+      "type": "linear",
+      "domain": {
+        "fields": [
+          {
+            "data": "data_3",
+            "field": "mean_y1"
+          },
+          {
+            "data": "data_3",
+            "field": "y2"
+          },
+          [1, 5]
+        ]
+      },
+      "range": [
+        {
+          "signal": "concat_0_child_height"
+        },
+        0
+      ],
+      "zero": false,
+      "nice": true
+    },
+    {
+      "name": "concat_1_y",
+      "type": "linear",
+      "domain": {
+        "data": "data_4",
+        "fields": ["y1", "y2"]
+      },
+      "range": [
+        {
+          "signal": "concat_1_child_height"
+        },
+        0
+      ],
+      "nice": true,
+      "zero": true
+    }
+  ]
+}

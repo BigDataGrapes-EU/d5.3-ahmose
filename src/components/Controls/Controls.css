@@ -1,0 +1,24 @@
+.checkbox {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.mdc-drawer .mdc-list--two-line .mdc-list-item {
+  height: auto;
+}
+/* Same as .mdc-drawer .mdc-list-item take out height add display */
+.mdc-drawer .mdc-select {
+  font-family: Roboto, sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  font-weight: 500;
+  letter-spacing: 0.00714em;
+  text-decoration: inherit;
+  text-transform: inherit;
+  /* height: 40px; */
+  display: block;
+  margin: 8px;
+  padding: 0 8px;
+}
